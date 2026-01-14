@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { LayoutDashboard, BookOpen, MessageSquare, Settings, LogOut, Video, Users, ShieldAlert, Moon, Sun, X, UserPlus } from 'lucide-react';
+import { LayoutDashboard, BookOpen, MessageSquare, Settings, LogOut, Video, Users, ShieldAlert, Moon, Sun, X, UserPlus, CheckSquare, Building, Briefcase, PlusCircle, BookCopy } from 'lucide-react';
 import { UserRole } from '../types';
 
 interface SidebarProps {
@@ -11,6 +12,8 @@ interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
   onLogout: () => void;
+  pendingCount?: number;
+  pendingFlagsCount?: number;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ 
@@ -21,28 +24,64 @@ const Sidebar: React.FC<SidebarProps> = ({
   toggleDarkMode,
   isOpen,
   onClose,
-  onLogout
+  onLogout,
+  pendingCount,
+  pendingFlagsCount
 }) => {
-  const isTeacher = currentRole === UserRole.CONTRACTOR_TEACHER;
-  const isAdmin = currentRole === UserRole.ADMIN;
 
-  let menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'curriculum', label: isTeacher ? 'My Curriculum' : 'All Courses', icon: BookOpen },
-    { id: 'videos', label: isTeacher ? 'Studio Uploads' : 'Lesson Library', icon: Video },
-    { id: 'qa', label: 'The Bridge (Q&A)', icon: MessageSquare },
-    { id: 'settings', label: 'Settings', icon: Settings },
-  ];
+  const getMenuItems = () => {
+    switch(currentRole) {
+      case UserRole.SUPER_ADMIN:
+        return {
+          title: 'Platform',
+          items: [
+            { id: 'sa-dashboard', label: 'Overview', icon: LayoutDashboard },
+            { id: 'sa-onboard', label: 'Onboard School', icon: PlusCircle },
+            { id: 'sa-schools', label: 'Manage Schools', icon: Building },
+            { id: 'sa-subscriptions', label: 'Subscriptions', icon: Briefcase },
+            { id: 'settings', label: 'System Settings', icon: Settings },
+          ]
+        };
+      case UserRole.SCHOOL_ADMIN:
+        return {
+          title: 'Administration',
+          items: [
+            { id: 'admin-dashboard', label: 'Overview', icon: LayoutDashboard },
+            { id: 'admin-academics', label: 'Academic Setup', icon: BookCopy },
+            { id: 'admin-register', label: 'Register User', icon: UserPlus },
+            { id: 'admin-users', label: 'User Management', icon: Users },
+            { id: 'admin-approvals', label: 'Video Approvals', icon: CheckSquare },
+            { id: 'admin-content', label: 'Content Moderation', icon: ShieldAlert },
+            { id: 'settings', label: 'School Settings', icon: Settings },
+          ]
+        };
+      case UserRole.SUBJECT_TEACHER:
+         return {
+          title: 'Creator Portal',
+          items: [
+            { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+            { id: 'videos', label: 'My Lessons', icon: Video },
+            { id: 'qa', label: 'The Bridge', icon: MessageSquare },
+            { id: 'settings', label: 'Settings', icon: Settings },
+          ]
+        };
+      case UserRole.CLASSROOM_TEACHER:
+        return {
+          title: 'Facilitator Tools',
+          items: [
+            { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+            { id: 'curriculum', label: 'All Courses', icon: BookOpen },
+            { id: 'videos', label: 'Lesson Library', icon: Video },
+            { id: 'qa', label: 'The Bridge (Q&A)', icon: MessageSquare },
+            { id: 'settings', label: 'Settings', icon: Settings },
+          ]
+        };
+      default:
+        return { title: '', items: [] };
+    }
+  };
 
-  if (isAdmin) {
-    menuItems = [
-      { id: 'admin-dashboard', label: 'Overview', icon: LayoutDashboard },
-      { id: 'admin-register', label: 'Register User', icon: UserPlus }, // New
-      { id: 'admin-users', label: 'User Management', icon: Users },
-      { id: 'admin-content', label: 'Content Moderation', icon: ShieldAlert },
-      { id: 'settings', label: 'System Settings', icon: Settings },
-    ];
-  }
+  const { title: menuTitle, items: menuItems } = getMenuItems();
 
   return (
     <>
@@ -70,11 +109,14 @@ const Sidebar: React.FC<SidebarProps> = ({
 
         <div className="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
           <div className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4 px-4">
-            {isAdmin ? 'Administration' : 'Overview'}
+            {menuTitle}
           </div>
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeView === item.id;
+            const hasPendingAdmin = item.id === 'admin-approvals' && pendingCount && pendingCount > 0;
+            const hasPendingTeacher = item.id === 'qa' && currentRole === UserRole.SUBJECT_TEACHER && pendingFlagsCount && pendingFlagsCount > 0;
+
             return (
               <button
                 key={item.id}
@@ -86,10 +128,20 @@ const Sidebar: React.FC<SidebarProps> = ({
                   isActive
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
                     : 'text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-800 hover:text-blue-600 dark:hover:text-blue-400'
-                }`}
+                } ${hasPendingAdmin ? 'glowing-notification' : ''} ${hasPendingTeacher ? 'glowing-notification-red' : ''}`}
               >
                 <Icon size={20} className={isActive ? 'text-white' : 'text-gray-400 dark:text-gray-500 group-hover:text-blue-600 dark:group-hover:text-blue-400'} />
                 <span className="font-medium">{item.label}</span>
+                {hasPendingAdmin && (
+                  <span className="ml-auto bg-orange-500 text-white text-[11px] w-5 h-5 flex items-center justify-center rounded-full font-bold animate-pulse">
+                    {pendingCount}
+                  </span>
+                )}
+                 {hasPendingTeacher && (
+                  <span className="ml-auto bg-red-500 text-white text-[11px] w-5 h-5 flex items-center justify-center rounded-full font-bold">
+                    {pendingFlagsCount}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -109,18 +161,6 @@ const Sidebar: React.FC<SidebarProps> = ({
               <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform ${isDarkMode ? 'left-4.5' : 'left-0.5'}`} style={{ left: isDarkMode ? '18px' : '2px' }}></div>
             </div>
           </button>
-
-          {!isAdmin && (
-            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-4">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-8 h-8 rounded-full bg-blue-200 dark:bg-blue-800 flex items-center justify-center text-blue-700 dark:text-blue-200">
-                  <span className="font-bold text-xs">PRO</span>
-                </div>
-                <span className="text-sm font-bold text-blue-900 dark:text-blue-100">Premium Plan</span>
-              </div>
-              <p className="text-xs text-blue-700 dark:text-blue-300">Your school has 14 days left.</p>
-            </div>
-          )}
           
           <button 
             onClick={onLogout}

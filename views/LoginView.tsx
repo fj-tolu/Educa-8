@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect, useRef } from 'react';
 import { Lock, Mail, ArrowRight } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { useToast } from '../contexts/ToastContext';
 
 interface LoginViewProps {
   onLogin: (email: string) => void;
@@ -9,28 +12,96 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(false);
+  const [isExiting, setIsExiting] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { showToast } = useToast();
+  const [typedText, setTypedText] = useState('');
+  const fullText = "Welcome to Educ-8... kindly log in";
+
+  useEffect(() => {
+    if (isExiting) return;
+    const timer = setTimeout(() => {
+      let i = 0;
+      const typingInterval = setInterval(() => {
+        setTypedText(fullText.substring(0, i + 1));
+        i++;
+        if (i === fullText.length) {
+          clearInterval(typingInterval);
+        }
+      }, 60);
+      return () => clearInterval(typingInterval);
+    }, 500); // Delay before typing starts
+    return () => clearTimeout(timer);
+  }, [isExiting]);
+
+  // --- Flashlight Effect ---
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      container.style.setProperty('--x', `${e.clientX}px`);
+      container.style.setProperty('--y', `${e.clientY}px`);
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading || isExiting) return;
     setIsLoading(true);
-    // Simulate network request
+    setError(false);
+
     setTimeout(() => {
-      onLogin(email);
-      setIsLoading(false);
+      if (password === 'wrong') {
+        setError(true);
+        setIsLoading(false);
+        showToast('Invalid credentials. Please try again.', 'error');
+      } else {
+        setIsExiting(true);
+      }
     }, 1000);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-dark-bg flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-dark-surface p-8 rounded-3xl shadow-xl w-full max-w-md border border-gray-100 dark:border-dark-border animate-fade-in">
-        <div className="flex justify-center mb-8">
+    <div 
+      ref={containerRef}
+      className="min-h-screen bg-dark-bg flex items-center justify-center p-4 transition-colors overflow-hidden"
+      style={{
+        background: `radial-gradient(circle at var(--x) var(--y), rgba(15, 23, 42, 0.8) 0%, #0f172a 30%, #0f172a 100%)`
+      }}
+    >
+      <motion.div 
+        animate={{ 
+          x: error ? [0, -6, 6, -6, 6, -4, 4, 0] : 0,
+          scale: isExiting ? 0 : 1,
+          opacity: isExiting ? 0 : 1,
+          rotate: isExiting ? -30 : 0
+        }}
+        transition={{ 
+            x: { duration: 0.5, type: 'spring', stiffness: 500, damping: 20 },
+            default: { duration: 0.4, ease: 'easeIn' }
+        }}
+        onAnimationComplete={() => {
+            if (error) setError(false);
+            if (isExiting) onLogin(email);
+        }}
+        className={`bg-white/5 p-8 rounded-3xl shadow-2xl w-full max-w-md border backdrop-blur-2xl transition-all ${error ? 'border-amber-500/50 shadow-amber-500/20' : 'border-white/10 shadow-blue-900/40'} glassmorphic-card`}
+      >
+        <motion.div 
+            initial={{scale: 0}} animate={{scale:1}} transition={{delay: 0.2, type:'spring'}}
+            className="flex justify-center mb-8">
           <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-bold text-3xl shadow-lg shadow-blue-500/40">
             E
           </div>
-        </div>
+        </motion.div>
         
-        <h2 className="text-2xl font-bold text-center text-gray-800 dark:text-white mb-2">Welcome Back</h2>
-        <p className="text-center text-gray-500 dark:text-gray-400 mb-8">Sign in to access the Educa-8 platform</p>
+        <h2 className="text-xl font-medium text-center text-gray-200 mb-8 h-7">
+          {typedText}
+          <span className="blinking-cursor">|</span>
+        </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -43,7 +114,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="e.g. admin@educa8.com"
-                className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white transition-all"
+                className="w-full pl-10 pr-4 py-3 bg-gray-50/5 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-white transition-all"
               />
             </div>
           </div>
@@ -57,39 +128,31 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white transition-all"
+                placeholder="•••••••• (use 'wrong' to test error)"
+                className="w-full pl-10 pr-4 py-3 bg-gray-50/5 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-white transition-all"
               />
             </div>
           </div>
 
-          <div className="flex items-center justify-between text-sm">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" className="rounded text-blue-600 focus:ring-blue-500" />
-              <span className="text-gray-600 dark:text-gray-400">Remember me</span>
-            </label>
-            <a href="#" className="text-blue-600 font-medium hover:underline">Forgot password?</a>
-          </div>
-
-          <button 
+          <motion.button 
             type="submit" 
-            disabled={isLoading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            disabled={isLoading || isExiting}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
           >
-            {isLoading ? 'Signing In...' : 'Sign In'}
+            {isLoading ? 'Authenticating...' : 'Engage'}
             {!isLoading && <ArrowRight size={18} />}
-          </button>
+          </motion.button>
         </form>
 
-        <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800 text-center">
+        <div className="mt-8 pt-6 border-t border-white/10 text-center">
           <p className="text-xs text-gray-400">
-            Demo Logins:<br/>
-            Admin: admin@educa8.com<br/>
-            Teacher: teacher@educa8.com<br/>
-            School: school@educa8.com
+            Demo Logins (any password except 'wrong'):<br/>
+            superadmin@educa8.com, admin@educa8.com, teacher@educa8.com, facilitator@educa8.com
           </p>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

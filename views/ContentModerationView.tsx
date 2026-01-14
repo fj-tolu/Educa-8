@@ -11,7 +11,11 @@ interface Alert {
     evidence: string;
 }
 
-const ContentModerationView: React.FC = () => {
+interface ContentModerationViewProps {
+    onNavigate: (view: string) => void;
+}
+
+const ContentModerationView: React.FC<ContentModerationViewProps> = ({ onNavigate }) => {
     const [alerts, setAlerts] = useState<Alert[]>([
         { 
             id: 1, 

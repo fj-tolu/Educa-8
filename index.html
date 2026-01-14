@@ -62,6 +62,105 @@
       .glow-hover:hover {
         box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
       }
+
+      /* Glassmorphism */
+      .glassmorphic-backdrop {
+        background-color: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+      }
+
+      .dark .glassmorphic-card {
+        background-color: rgba(30, 41, 59, 0.7); /* dark-surface with alpha */
+        border: 1px solid rgba(51, 65, 85, 0.5); /* dark-border with alpha */
+      }
+      .glassmorphic-card {
+        background-color: rgba(255, 255, 255, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      /* Animated Gradient Border */
+      .animated-gradient-border {
+        position: relative;
+        background-clip: padding-box;
+        border: 2px solid transparent;
+      }
+      .animated-gradient-border::before {
+        content: '';
+        position: absolute;
+        top: 0; right: 0; bottom: 0; left: 0;
+        z-index: -1;
+        margin: -2px; /* same as border width */
+        border-radius: inherit;
+        background: linear-gradient(to right, #6EE7B7, #3B82F6, #9333EA);
+        background-size: 200% 200%;
+        animation: gradient-animation 4s ease infinite;
+      }
+
+      @keyframes gradient-animation {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+      }
+
+      /* Blinking Cursor for Typing Animation */
+      .blinking-cursor {
+        font-weight: 500;
+        animation: blink 1s step-end infinite;
+      }
+
+      @keyframes blink {
+        from, to { color: transparent }
+        50% { color: #A5B4FC; }
+      }
+
+      /* Glowing animation for notifications */
+      .glowing-notification {
+        animation: glow 3s ease-in-out infinite;
+      }
+      @keyframes glow {
+        0%, 100% { box-shadow: 0 0 5px rgba(59, 130, 246, 0); }
+        50% { box-shadow: 0 0 25px rgba(59, 130, 246, 0.5); }
+      }
+
+      .dark .glowing-notification-red, .glowing-notification-red {
+          animation: glow-red 3s ease-in-out infinite;
+      }
+      @keyframes glow-red {
+        0%, 100% { box-shadow: 0 0 5px rgba(239, 68, 68, 0); }
+        50% { box-shadow: 0 0 25px rgba(239, 68, 68, 0.4); }
+      }
+
+      /* Ripple effect */
+      .ripple-button {
+        position: relative;
+        overflow: hidden;
+      }
+      .ripple {
+        position: absolute;
+        border-radius: 50%;
+        transform: scale(0);
+        animation: ripple-animation 0.6s linear;
+        background-color: rgba(255, 255, 255, 0.7);
+      }
+      @keyframes ripple-animation {
+        to {
+          transform: scale(4);
+          opacity: 0;
+        }
+      }
+
+      /* Activity Ticker */
+      .activity-feed {
+        animation: scroll-up 30s linear infinite;
+      }
+      .activity-feed-container:hover .activity-feed {
+        animation-play-state: paused;
+      }
+      @keyframes scroll-up {
+        from { transform: translateY(0); }
+        to { transform: translateY(-50%); }
+      }
     </style>
   <script type="importmap">
 {
@@ -69,7 +168,13 @@
     "react/": "https://esm.sh/react@^19.2.3/",
     "react": "https://esm.sh/react@^19.2.3",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "lucide-react": "https://esm.sh/lucide-react@^0.562.0"
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "react-beautiful-dnd": "https://esm.sh/react-beautiful-dnd@^13.1.1",
+    "@types/react-beautiful-dnd": "https://esm.sh/@types/react-beautiful-dnd@^13.1.8",
+    "framer-motion": "https://esm.sh/framer-motion@^11.3.19",
+    "@react-three/fiber": "https://esm.sh/@react-three/fiber@8.16.8",
+    "@react-three/drei": "https://esm.sh/@react-three/drei@9.109.2",
+    "three": "https://esm.sh/three@0.167.0"
   }
 }
 </script>
